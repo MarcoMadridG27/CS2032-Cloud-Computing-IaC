@@ -1,42 +1,48 @@
 from aws_cdk import (
     Stack,
     aws_ec2 as ec2,
+    aws_ssm as ssm,
+    CfnTag
 )
 from constructs import Construct
+
 
 class MVStack(Stack):
     def __init__(self, scope: Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
-        vpc = ec2.Vpc.from_lookup(self, "VPC", is_default=True)
+        # Truco: Usar parámetros SSM preconfigurados en AWS Academy
+        vpc_id = ssm.StringParameter.value_for_string_parameter(
+            self, "/aws/service/vpc/id"
+        )
 
-        sg = ec2.SecurityGroup(
+        subnet_id = ssm.StringParameter.value_for_string_parameter(
+            self, "/aws/service/subnet/public/id"
+        )
+
+        # Security Group usando L1 (no requiere permisos especiales)
+        sg = ec2.CfnSecurityGroup(
             self, "SG",
-            vpc=vpc,
-            description="Permitir SSH y HTTP",
-            allow_all_outbound=True
-        )
-        sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(22), "SSH")
-        sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(80), "HTTP")
-        # Versión actualizada sin warning (usa KeyPair)
-        key_pair = ec2.KeyPair.from_key_pair_name(
-            self, "KeyPair",
-            "vockey"  # Nombre del key pair existente en AWS
+            group_description="Permitir SSH y HTTP",
+            vpc_id=vpc_id,
+            security_group_ingress=[
+                {"ipProtocol": "tcp", "fromPort": 22, "toPort": 22, "cidrIp": "0.0.0.0/0"},
+                {"ipProtocol": "tcp", "fromPort": 80, "toPort": 80, "cidrIp": "0.0.0.0/0"}
+            ],
+            tags=[CfnTag(key="Name", value="SG-Tarea")]
         )
 
-        ec2.Instance(
+        # Instancia EC2 directa (sin roles)
+        ec2.CfnInstance(
             self, "Instancia",
-            instance_type=ec2.InstanceType("t2.micro"),
-            machine_image=ec2.MachineImage.generic_linux({
-                "us-east-1": "ami-043cbf1cf918dd74f"
-            }),
-            vpc=vpc,
-            security_group=sg,
-            key_pair=key_pair,
-            block_devices=[
-                ec2.BlockDevice(
-                    device_name="/dev/xvda",
-                    volume=ec2.BlockDeviceVolume.ebs(20)
-                )
-            ]
+            instance_type="t2.micro",
+            image_id="ami-043cbf1cf918dd74f",
+            key_name="vockey",
+            subnet_id=subnet_id,
+            security_group_ids=[sg.ref],
+            block_device_mappings=[{
+                "deviceName": "/dev/xvda",
+                "ebs": {"volumeSize": 20, "volumeType": "gp2"}
+            }],
+            tags=[CfnTag(key="Name", value="MV-Desarrollo")]
         )

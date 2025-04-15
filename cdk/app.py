@@ -3,7 +3,12 @@ import aws_cdk as cdk
 from cdk_stack import MVStack
 
 app = cdk.App()
-MVStack(app, "MVDesarrollo",
-    env=cdk.Environment(account="584758245304", region="us-east-1")
-)
+stack = MVStack(app, "MVDesarrollo")
+
+# Configuración para evitar creación de roles
+stack.template_options.metadata = {
+    "cdk_legacy_stack": True,
+    "aws:cdk:disable-iam": True
+}
+
 app.synth()
