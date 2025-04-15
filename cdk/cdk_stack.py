@@ -46,5 +46,6 @@ class MVStack(Stack):
                 ec2.BlockDevice(
                     device_name="/dev/xvda",
                     volume=ec2.BlockDeviceVolume.ebs(20))
-            ]
+            ],
+            role=None
         )
