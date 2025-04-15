@@ -19,12 +19,11 @@ class MVStack(Stack):
         sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(22), "SSH")
         sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(80), "HTTP")
 
-
         ec2.Instance(
             self, "Instancia",
             instance_type=ec2.InstanceType("t2.micro"),
             machine_image=ec2.MachineImage.generic_linux({
-                "us-east-1": "ami-043cbf1cf918dd74f"  # Ubuntu 22.04 en us-east-1
+                "us-east-1": "ami-043cbf1cf918dd74f"
             }),
             vpc=vpc,
             security_group=sg,
@@ -32,6 +31,7 @@ class MVStack(Stack):
             block_devices=[
                 ec2.BlockDevice(
                     device_name="/dev/xvda",
-                    volume=ec2.BlockDeviceVolume.ebs(20))
+                    volume=ec2.BlockDeviceVolume.ebs(20)
+                )
             ]
         )
