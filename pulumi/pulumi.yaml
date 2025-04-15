@@ -1,0 +1,3 @@
+name: proyecto-pulumi
+runtime: python
+description: Crear instancia EC2 con Pulumi en AWS
