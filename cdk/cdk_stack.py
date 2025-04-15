@@ -8,40 +8,27 @@ class MVStack(Stack):
     def __init__(self, scope: Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
-        vpc = ec2.Vpc(
-            self,
-            "MinimalVPC",
-            max_azs=1,
-            subnet_configuration=[
-                ec2.SubnetConfiguration(
-                    name="Public",
-                    subnet_type=ec2.SubnetType.PUBLIC,
-                    cidr_mask=24
-                )
-            ]
-        )
-
+        # Security Group con reglas SSH/HTTP (requiere VPC por defecto)
         sg = ec2.SecurityGroup(
-            self,
-            "SG",
-            vpc=vpc,
-            description="Permitir acceso SSH y HTTP",
+            self, "SG",
+            vpc=ec2.Vpc.from_lookup(self, "VPC", is_default=True),  # Usa la VPC por defecto
+            description="Permitir SSH y HTTP",
             allow_all_outbound=True
         )
         sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(22), "SSH")
         sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(80), "HTTP")
 
+        # Instancia EC2 exactamente como pide el enunciado
         ec2.Instance(
-            self,
-            "Instancia",
+            self, "Instancia",
             instance_type=ec2.InstanceType("t2.micro"),
             machine_image=ec2.MachineImage.lookup(name="Cloud9ubuntu22"),
-            key_name="vockey",
-            vpc=vpc,
+            key_name="vockey",  # Usa el par de claves especificado
             security_group=sg,
             block_devices=[
                 ec2.BlockDevice(
                     device_name="/dev/xvda",
-                    volume=ec2.BlockDeviceVolume.ebs(20))
+                    volume=ec2.BlockDeviceVolume.ebs(20)  # 20GB de disco
+                )
             ]
         )
