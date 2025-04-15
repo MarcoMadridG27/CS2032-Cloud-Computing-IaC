@@ -18,6 +18,11 @@ class MVStack(Stack):
         )
         sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(22), "SSH")
         sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(80), "HTTP")
+        # Versión actualizada sin warning (usa KeyPair)
+        key_pair = ec2.KeyPair.from_key_pair_name(
+            self, "KeyPair",
+            "vockey"  # Nombre del key pair existente en AWS
+        )
 
         ec2.Instance(
             self, "Instancia",
@@ -27,7 +32,7 @@ class MVStack(Stack):
             }),
             vpc=vpc,
             security_group=sg,
-            key_name="vockey",
+            key_pair=key_pair,
             block_devices=[
                 ec2.BlockDevice(
                     device_name="/dev/xvda",
