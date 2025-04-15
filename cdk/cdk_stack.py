@@ -1,48 +1,50 @@
 from aws_cdk import (
     Stack,
     aws_ec2 as ec2,
-    aws_ssm as ssm,
     CfnTag
 )
 from constructs import Construct
-
 
 class MVStack(Stack):
     def __init__(self, scope: Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
-        # Truco: Usar parámetros SSM preconfigurados en AWS Academy
-        vpc_id = ssm.StringParameter.value_for_string_parameter(
-            self, "/aws/service/vpc/id"
-        )
-
-        subnet_id = ssm.StringParameter.value_for_string_parameter(
-            self, "/aws/service/subnet/public/id"
-        )
-
-        # Security Group usando L1 (no requiere permisos especiales)
-        sg = ec2.CfnSecurityGroup(
-            self, "SG",
-            group_description="Permitir SSH y HTTP",
-            vpc_id=vpc_id,
-            security_group_ingress=[
-                {"ipProtocol": "tcp", "fromPort": 22, "toPort": 22, "cidrIp": "0.0.0.0/0"},
-                {"ipProtocol": "tcp", "fromPort": 80, "toPort": 80, "cidrIp": "0.0.0.0/0"}
+        # Usar la VPC por defecto (sin lookup)
+        vpc = ec2.Vpc(self, "VPC",
+            max_azs=1,  # Usar solo 1 AZ para minimizar permisos
+            subnet_configuration=[
+                {
+                    "name": "Public",
+                    "subnetType": ec2.SubnetType.PUBLIC,
+                    "cidrMask": 24
+                }
             ],
-            tags=[CfnTag(key="Name", value="SG-Tarea")]
+            nat_gateways=0  # Sin NAT para reducir permisos
         )
 
-        # Instancia EC2 directa (sin roles)
-        ec2.CfnInstance(
+        # Security Group básico
+        sg = ec2.SecurityGroup(
+            self, "SG",
+            vpc=vpc,
+            description="Permitir SSH y HTTP",
+            allow_all_outbound=True
+        )
+        sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(22), "SSH")
+        sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(80), "HTTP")
+
+        # Instancia EC2 con AMI específica
+        ec2.Instance(
             self, "Instancia",
-            instance_type="t2.micro",
-            image_id="ami-043cbf1cf918dd74f",
+            instance_type=ec2.InstanceType("t2.micro"),
+            machine_image=ec2.MachineImage.generic_linux({
+                "us-east-1": "ami-043cbf1cf918dd74f"  # AMI verificada
+            }),
+            vpc=vpc,
+            security_group=sg,
             key_name="vockey",
-            subnet_id=subnet_id,
-            security_group_ids=[sg.ref],
-            block_device_mappings=[{
-                "deviceName": "/dev/xvda",
-                "ebs": {"volumeSize": 20, "volumeType": "gp2"}
-            }],
-            tags=[CfnTag(key="Name", value="MV-Desarrollo")]
+            block_devices=[
+                ec2.BlockDevice(
+                    device_name="/dev/xvda",
+                    volume=ec2.BlockDeviceVolume.ebs(20))
+            ]
         )
