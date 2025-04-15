@@ -1,16 +1,8 @@
+# app.py
 #!/usr/bin/env python3
-import os
-
 import aws_cdk as cdk
-
-from cdk.cdk_stack import CdkStack
-
+from mv_stack import MVStack
 
 app = cdk.App()
-CdkStack(app, "CdkStack",
-    env=cdk.Environment(
-        account=os.getenv('CDK_DEFAULT_ACCOUNT'),
-        region=os.getenv('CDK_DEFAULT_REGION')
-    )
-)
+MVStack(app, "MVDesarrollo")
 app.synth()

@@ -1,38 +1,36 @@
-from aws_cdk import Stack
-from aws_cdk import aws_ec2 as ec2
+# mv_stack.py
+from aws_cdk import (
+    Stack,
+    aws_ec2 as ec2,
+)
 from constructs import Construct
 
-class CdkStack(Stack):
+class MVStack(Stack):
 
-    def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
-        super().__init__(scope, construct_id, **kwargs)
+    def __init__(self, scope: Construct, id: str, **kwargs) -> None:
+        super().__init__(scope, id, **kwargs)
 
-        vpc = ec2.Vpc.from_lookup(self, "DefaultVPC", is_default=True)
+        # Usa tu VPC por defecto
+        vpc = ec2.Vpc.from_lookup(self, "VPC", is_default=True)
 
-        sg = ec2.SecurityGroup(
-            self, "SecurityGroup",
+        # Seguridad
+        sg = ec2.SecurityGroup(self, "SG",
             vpc=vpc,
             description="Permitir acceso SSH y HTTP",
             allow_all_outbound=True
         )
+        sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(22), "SSH")
+        sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(80), "HTTP")
 
-        sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(22), "Permitir SSH")
-        sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(80), "Permitir HTTP")
-
-        ami = ec2.MachineImage.generic_linux({
-            "us-east-1": "ami-0fc5d935ebf8bc3bc"
-        })
-
-        instance = ec2.Instance(
-            self, "MiInstancia",
+        ec2.Instance(self, "Instancia",
             instance_type=ec2.InstanceType("t2.micro"),
-            machine_image=ami,
+            machine_image=ec2.MachineImage.lookup(name="Cloud9ubuntu22"),
+            key_name="vockey",
             vpc=vpc,
             security_group=sg,
-            key_name="vockey",
             block_devices=[
                 ec2.BlockDevice(
-                    device_name="/dev/sda1",
+                    device_name="/dev/xvda",
                     volume=ec2.BlockDeviceVolume.ebs(20)
                 )
             ]
