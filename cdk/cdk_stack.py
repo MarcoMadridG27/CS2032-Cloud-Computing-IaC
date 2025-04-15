@@ -8,7 +8,6 @@ class MVStack(Stack):
     def __init__(self, scope: Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
-        # Crear VPC con subnet pública
         vpc = ec2.Vpc(self, "VPC",
             max_azs=1,
             subnet_configuration=[
@@ -21,10 +20,8 @@ class MVStack(Stack):
             nat_gateways=0
         )
 
-        # Obtener una subred pública de la VPC
         public_subnet = vpc.public_subnets[0]
 
-        # Grupo de seguridad
         sg = ec2.SecurityGroup(
             self, "SG",
             vpc=vpc,
@@ -34,10 +31,8 @@ class MVStack(Stack):
         sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(22), "SSH")
         sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(80), "HTTP")
 
-        # AMI Ubuntu (la que mencionaste antes)
-        ami_id = "ami-022ce79dc9cabea0c"  # Cloud9ubuntu22
+        ami_id = "ami-022ce79dc9cabea0c"
 
-        # Instancia EC2 con CfnInstance
         ec2.CfnInstance(self, "Instancia",
             image_id=ami_id,
             instance_type="t2.micro",
