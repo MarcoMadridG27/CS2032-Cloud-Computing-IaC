@@ -9,13 +9,9 @@ class MVStack(Stack):
 
     def __init__(self, scope: Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
-
-        # Usa tu VPC por defecto
-        vpc = ec2.Vpc.from_lookup(self, "VPC", is_default=True)
-
         # Seguridad
         sg = ec2.SecurityGroup(self, "SG",
-            vpc=vpc,
+
             description="Permitir acceso SSH y HTTP",
             allow_all_outbound=True
         )
@@ -26,7 +22,6 @@ class MVStack(Stack):
             instance_type=ec2.InstanceType("t2.micro"),
             machine_image=ec2.MachineImage.lookup(name="Cloud9ubuntu22"),
             key_name="vockey",
-            vpc=vpc,
             security_group=sg,
             block_devices=[
                 ec2.BlockDevice(
