@@ -35,7 +35,7 @@ class MVStack(Stack):
         sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(80), "HTTP")
 
         # AMI Ubuntu (la que mencionaste antes)
-        ami_id = "ami-03c983b9d7cd45421"  # Cloud9ubuntu22
+        ami_id = "ami-022ce79dc9cabea0c"  # Cloud9ubuntu22
 
         # Instancia EC2 con CfnInstance
         ec2.CfnInstance(self, "Instancia",
